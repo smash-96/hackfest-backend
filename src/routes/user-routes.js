@@ -4,6 +4,7 @@ const {
   fetchOnlineUsers,
   broadcastRequest,
   trackRequests,
+  checkRequests,
   sendMessage,
   fetchMessages,
   deleteRequest,
@@ -16,13 +17,10 @@ router.post("/user", addUser);
 router.get("/user/fetch-online", fetchOnlineUsers);
 router.post("/user/broadcast-request", broadcastRequest);
 router.patch("/user/track-requests", trackRequests);
+router.patch("/user/check-requests", checkRequests);
 router.post("/user/send-message", sendMessage);
 router.get("/user/fetch-messages", fetchMessages);
 router.delete("/user/delete", deleteRequest);
-// router.get("/students", getAllStudents);
-// router.get("/student/:id", getStudent);
-// router.put("/student/:id", updateStudent);
-// router.delete("/student/:id", deleteStudent);
 
 module.exports = {
   routes: router,

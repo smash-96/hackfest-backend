@@ -15,9 +15,9 @@ const addUser = async (req, res) => {
         ...data,
         uniqueID,
       });
-    return res.status(200).send(uniqueID);
+    res.status(200).send(uniqueID);
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
@@ -28,14 +28,14 @@ const fetchOnlineUsers = async (req, res) => {
     const requests = await firestore.collection("requests");
     const data = await requests.get();
     if (data.empty) {
-      return res.status(404).send("No request found");
+      res.status(404).send("No request found");
     } else {
-      console.log(data);
+      //console.log(data);
       const count = data.size.toString(); //this will exceed memory if the collections contains more documents than can fit in your memory! Reserve this method for small collections.
-      return res.status(200).send(count);
+      res.status(200).send(count);
     }
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
@@ -47,9 +47,9 @@ const broadcastRequest = async (req, res) => {
       userID,
       ConnectedTo: null,
     });
-    return res.status(200).send("Request broadcasted Successfully!");
+    res.status(200).send("Request broadcasted Successfully!");
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
@@ -58,6 +58,8 @@ const trackRequests = async (req, res) => {
   try {
     const userID = req.query.userid; // Also get userid to track requests
     const requests = await firestore.collection("requests");
+    res.setHeader("Content-Type", "text/html");
+
     requests.onSnapshot((snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         const userConnected = (await requests.doc(userID).get()).data()
@@ -74,7 +76,9 @@ const trackRequests = async (req, res) => {
             //await new Promise((resolve) => setTimeout(resolve, 2000));
             connect(userID, data.userID);
             console.log("CONNECTED", [userID, data.userID]);
-            return res.status(200).send([userID, data.userID]);
+            // res.status(200).send([userID, data.userID]);
+            res.write([userID, data.userID]);
+            res.end();
           }
           // if (change.type === "modified") {
           //   console.log("MODIFIED", data);
@@ -89,9 +93,52 @@ const trackRequests = async (req, res) => {
         }
       });
     });
-    return res.status(503).send("Tracking Requests");
+    //res.status(503).send("Tracking Requests");
+    res.write("Tracking Requests");
   } catch (error) {
-    return res.status(400).send(error.message);
+    //res.status(400).send(error.message);
+    res.write(error.message);
+    res.end();
+  }
+};
+
+const checkRequests = async (req, res) => {
+  try {
+    const userID = req.query.userid; // Also get userid to track requests
+    const requests = await firestore.collection("requests");
+    try {
+      const userConnected = (await requests.doc(userID).get()).data().connected;
+      await requests.get().then((querySnapshot) => {
+        const tempDoc = [];
+        querySnapshot.forEach((doc) => {
+          tempDoc.push({ id: doc.id, ...doc.data() });
+        });
+
+        if (tempDoc.length !== 0) {
+          if (!userConnected && tempDoc.length > 1) {
+            for (let i = 0; i < tempDoc.length; i++) {
+              if (tempDoc[i].connected === false && tempDoc.userID !== userID) {
+                console.log("tempDoc[i].connected", tempDoc[i].connected);
+                //await new Promise((resolve) => setTimeout(resolve, 2000));
+                connect(userID, tempDoc[i].userID);
+                console.log("CONNECTED", [userID, tempDoc[i].userID]);
+                res.status(200).send([userID, tempDoc[i].userID]);
+                break;
+              }
+            }
+          } else {
+            res.status(503).send("No requests available");
+          }
+        } else {
+          res.status(503).send("No requests available");
+        }
+      });
+    } catch (error) {
+      console.log(error.message);
+      res.status(404).send("User not avaialble");
+    }
+  } catch (error) {
+    res.status(400).send(error.message);
   }
 };
 
@@ -115,7 +162,7 @@ const chatID = (chatterID, chatteeID) => {
   chatIDpre.push(chatter);
   chatIDpre.push(chattee);
   chatIDpre.sort();
-  return chatIDpre.join("_");
+  chatIDpre.join("_");
 };
 const sendMessage = async (req, res) => {
   try {
@@ -133,9 +180,9 @@ const sendMessage = async (req, res) => {
       senderID: chatterID,
       recieverID: chatteeID,
     });
-    return res.status(200).send("Message Sent");
+    res.status(200).send("Message Sent");
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
@@ -153,10 +200,10 @@ const fetchMessages = async (req, res) => {
       .onSnapshot((snapshot) => {
         msgList.push(snapshot.docs.map((doc) => doc.data()));
         console.log(msgList);
-        return res.status(200).send(msgList);
+        res.status(200).send(msgList);
       });
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
@@ -170,17 +217,17 @@ const deleteRequest = async (req, res) => {
       connected: false,
     });
     await requests.doc(userID).delete();
-    return res.status(200).send("User Disconnected Successfully");
+    res.status(200).send("User Disconnected Successfully");
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
 const nextUser = async (req, res) => {
   try {
-    return res.status(200).send("User Changed Successfully");
+    res.status(200).send("User Changed Successfully");
   } catch (error) {
-    return res.status(400).send(error.message);
+    res.status(400).send(error.message);
   }
 };
 
@@ -189,6 +236,7 @@ module.exports = {
   fetchOnlineUsers,
   broadcastRequest,
   trackRequests,
+  checkRequests,
   sendMessage,
   fetchMessages,
   deleteRequest,
