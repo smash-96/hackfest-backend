@@ -3,7 +3,6 @@ const {
   addUser,
   fetchOnlineUsers,
   broadcastRequest,
-  trackRequests,
   checkRequests,
   sendMessage,
   fetchMessages,
@@ -16,7 +15,6 @@ const router = express.Router();
 router.post("/user", addUser);
 router.get("/user/fetch-online", fetchOnlineUsers);
 router.post("/user/broadcast-request", broadcastRequest);
-router.patch("/user/track-requests", trackRequests);
 router.patch("/user/check-requests", checkRequests);
 router.post("/user/send-message", sendMessage);
 router.get("/user/fetch-messages", fetchMessages);
